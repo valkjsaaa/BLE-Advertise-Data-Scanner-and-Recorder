@@ -10,6 +10,23 @@
 import UIKit
 import CoreBluetooth
 
+var userDefaults = NSUserDefaults.standardUserDefaults();
+var monitoredUuids: [String] = [];
+let monitoredUuidsPrefKey = "monitoredUuids";
+
+
+func saveUserDefaults(){
+    func uniq<S: SequenceType, E: Hashable where E==S.Generator.Element>(source: S) -> [E] {
+        var seen: [E:Bool] = [:]
+        return source.filter({ seen.updateValue(true, forKey: $0) == nil })
+    }
+
+    monitoredUuids = uniq(monitoredUuids);
+
+    userDefaults.setObject(monitoredUuids, forKey: monitoredUuidsPrefKey);
+    userDefaults.synchronize();
+}
+
 class PeripheralTableViewCell: UITableViewCell {
 
     @IBOutlet weak var textDeviceName: UILabel!
@@ -23,6 +40,35 @@ class PeripheralTableViewCell: UITableViewCell {
     }
 }
 
+class FavoritesViewController: UITableViewController {
+
+    @IBOutlet var uuidTableView: UITableView!
+
+    override func viewDidLoad() {
+        super.viewDidLoad();
+        if let uuidArray = userDefaults.arrayForKey(monitoredUuidsPrefKey) as? [String] {
+            monitoredUuids = uuidArray;
+        } else {
+            saveUserDefaults();
+        }
+    }
+
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated);
+        uuidTableView.reloadData();
+    }
+
+    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return monitoredUuids.count;
+    }
+
+    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let newCell = UITableViewCell(style: .Default, reuseIdentifier: "cell");
+        newCell.textLabel?.text = monitoredUuids[indexPath.row];
+        return newCell;
+    }
+}
+
 
 class ViewController: UITableViewController, CBCentralManagerDelegate {
 
@@ -32,11 +78,16 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
     var peripherals: [(CBPeripheral, String, NSNumber)]?;
 
     override func viewDidLoad() {
-        super.viewDidLoad()
+        super.viewDidLoad();
         // Do any additional setup after loading the view, typically from a nib.
         peripherals = [];
         centralManager = CBCentralManager(delegate: self, queue: nil);
         peripheralTableView.editing = true;
+        if let uuidArray = userDefaults.arrayForKey(monitoredUuidsPrefKey) as? [String] {
+            monitoredUuids = uuidArray;
+        } else {
+            saveUserDefaults();
+        }
     }
 
     override func didReceiveMemoryWarning() {
@@ -76,9 +127,12 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
     }
 
     func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
+        if(getDeviceStatus(peripheral)) {
+            print("device found: \(peripheral.identifier.UUIDString), \(advertisementData)");
+        }
         let newPeripheralElem = (peripheral, "\(advertisementData)", RSSI);
         for (idx, peripheralElem) in peripherals!.enumerate() {
-            if peripheralElem.0 == peripheral {
+            if peripheralElem.0.identifier.isEqual(peripheral.identifier) {
                 peripherals![idx] = newPeripheralElem;
                 if let oldCell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: idx, inSection: 0)) as? PeripheralTableViewCell {
                     setCellText(oldCell, with: newPeripheralElem);
@@ -87,6 +141,7 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
             }
         }
         peripherals!.append(newPeripheralElem);
+        print("try to create a new cell");
         tableView.insertRowsAtIndexPaths([NSIndexPath(forRow: peripherals!.count - 1, inSection: 0)], withRowAnimation: .Automatic);
     }
 
@@ -101,19 +156,52 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
         cell.setText(itemDeviceName, "\(itemRssiValue) dB", itemAdData);
     }
 
+    func getDeviceStatus(device:CBPeripheral) -> Bool {
+        return monitoredUuids.contains(device.identifier.UUIDString);
+    }
+
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        print("cell count: \(peripherals!.count)")
         return peripherals!.count;
     }
 
+    override func tableView(tableView: UITableView, willDisplayCell cell: UITableViewCell, forRowAtIndexPath indexPath: NSIndexPath) {
+        let itemNumber = indexPath.item;
+        if peripherals!.count > itemNumber {
+            let itemPeripheral = peripherals![itemNumber];
+            cell.setSelected(getDeviceStatus(itemPeripheral.0), animated: false)
+            if getDeviceStatus(itemPeripheral.0) {
+                tableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition: .None);
+            }
+            print("set selected \(getDeviceStatus(itemPeripheral.0)) for \(itemPeripheral.0.identifier.UUIDString)")
+        }
+    }
+
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let newCell = tableView.dequeueReusableCellWithIdentifier("PeripheralTableViewCell") as! PeripheralTableViewCell;
+        print("create a new cell: \(indexPath.row)")
+        let newCell = tableView.dequeueReusableCellWithIdentifier("PeripheralTableViewCell", forIndexPath: indexPath) as! PeripheralTableViewCell;
         let itemNumber = indexPath.item;
         if peripherals!.count > itemNumber {
             let itemPeripheral = peripherals![itemNumber];
             setCellText(newCell, with: itemPeripheral);
+            return newCell;
         }
         newCell.setText("", "", "");
         return newCell;
+    }
+
+    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        monitoredUuids.append(peripherals![indexPath.row].0.identifier.UUIDString);
+        saveUserDefaults()
+        print(userDefaults)
+    }
+
+    override func tableView(tableView: UITableView, didDeselectRowAtIndexPath indexPath: NSIndexPath) {
+        if let idx = monitoredUuids.indexOf(peripherals![indexPath.row].0.identifier.UUIDString) {
+            monitoredUuids.removeAtIndex(idx);
+            saveUserDefaults()
+        }
+        print(userDefaults)
     }
 
 }
