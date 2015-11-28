@@ -182,16 +182,16 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
         }
         let newPeripheralElem = (peripheral, "\(advertisementData)", RSSI);
         for (idx, peripheralElem) in peripherals!.enumerate() {
-            if peripheralElem.0.identifier.isEqual(peripheral.identifier) {
+            if peripheralElem.0.identifier.UUIDString.isEqual(peripheral.identifier.UUIDString) {
                 peripherals![idx] = newPeripheralElem;
                 if let oldCell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: idx, inSection: 0)) as? PeripheralTableViewCell {
                     setCellText(oldCell, with: newPeripheralElem);
-                    return;
                 }
+                return;
             }
         }
         peripherals!.append(newPeripheralElem);
-        print("try to create a new cell");
+        print("try to create a new cell: \(newPeripheralElem.0.identifier.UUIDString)");
         tableView.insertRowsAtIndexPaths([NSIndexPath(forRow: peripherals!.count - 1, inSection: 0)], withRowAnimation: .Automatic);
     }
 
@@ -224,6 +224,9 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
                 tableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition: .None);
             }
             print("set selected \(getDeviceStatus(itemPeripheral.0)) for \(itemPeripheral.0.identifier.UUIDString)")
+            if let peripheralCell = cell as? PeripheralTableViewCell {
+                setCellText(peripheralCell, with: itemPeripheral);
+            }
         }
     }
 
