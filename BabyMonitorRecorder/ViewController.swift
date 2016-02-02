@@ -104,25 +104,14 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
 
     var centralManager:CBCentralManager?;
     var peripherals: [(CBPeripheral, String, NSNumber)]?;
+    var filehandle:NSFileHandle?;
+    var lastBroadcastData: NSData?;
 
     func appendToDataFile(string: String) {
-        if let dir : NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first {
-            let path = dir.stringByAppendingPathComponent(dataFileName);
-
-            var filehandle:NSFileHandle;
-            if let testfilehendle = NSFileHandle(forUpdatingAtPath: path) {
-                filehandle = testfilehendle;
-            } else {
-                NSFileManager.defaultManager().createFileAtPath(path, contents: nil, attributes: nil);
-                filehandle = NSFileHandle(forUpdatingAtPath: path)!;
-            }
-            filehandle.seekToEndOfFile();
-
-            if let data = string.dataUsingEncoding(NSUTF8StringEncoding) {
-                filehandle.writeData(data)
-            }
-            filehandle.closeFile();
+        if let data = string.dataUsingEncoding(NSUTF8StringEncoding) {
+            filehandle!.writeData(data)
         }
+        filehandle!.synchronizeFile();
     }
 
     override func viewDidLoad() {
@@ -136,7 +125,20 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
         } else {
             saveUserDefaults();
         }
-        appendToDataFile("\(NSDate().description): Program Starts");
+
+        if let dir : NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first {
+            let path = dir.stringByAppendingPathComponent(dataFileName);
+
+            if let testfilehendle = NSFileHandle(forUpdatingAtPath: path) {
+                filehandle = testfilehendle;
+            } else {
+                NSFileManager.defaultManager().createFileAtPath(path, contents: nil, attributes: nil);
+                filehandle = NSFileHandle(forUpdatingAtPath: path)!;
+            }
+            filehandle!.seekToEndOfFile();
+        }
+
+        appendToDataFile("\(NSDate().description): Program Starts\n");
     }
 
     override func didReceiveMemoryWarning() {
@@ -177,8 +179,12 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
 
     func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
         if(getDeviceStatus(peripheral)) {
-            print("device found: \(peripheral.identifier.UUIDString), \(advertisementData)");
-            appendToDataFile("\(NSDate().description): Device Found: \(peripheral.identifier.UUIDString), \(advertisementData)");
+            let currentBroadcastData = advertisementData["kCBAdvDataManufacturerData"]!;
+            if (!currentBroadcastData.isEqual(lastBroadcastData)) {
+                print("device found: \(peripheral.identifier.UUIDString), \(currentBroadcastData)");
+                appendToDataFile("\(NSDate().description): Device Found: \(peripheral.identifier.UUIDString), Data: \(currentBroadcastData), RSSI: \(RSSI) dB\n");
+                lastBroadcastData = currentBroadcastData as? NSData;
+            }
         }
         let newPeripheralElem = (peripheral, "\(advertisementData)", RSSI);
         for (idx, peripheralElem) in peripherals!.enumerate() {
