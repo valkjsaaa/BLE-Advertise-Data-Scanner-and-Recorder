@@ -13,15 +13,65 @@ import UIKit
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
     var window: UIWindow?
+    let logFileOpQueue = dispatch_queue_create("me.jackieyang.babymonitor.fileop", nil);
+    var logFileHandle:NSFileHandle?;
 
+    func createLogFile(date: String) {
+        dispatch_async(logFileOpQueue) {
+            self.logFileHandle?.closeFile();
+            if let dir : NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first {
+                let path = dir.stringByAppendingPathComponent("data\(date).txt");
 
+                if let tempLogFileHandle = NSFileHandle(forUpdatingAtPath: path) {
+                    self.logFileHandle = tempLogFileHandle;
+                } else {
+                    NSFileManager.defaultManager().createFileAtPath(path, contents: nil, attributes: nil);
+                    self.logFileHandle = NSFileHandle(forUpdatingAtPath: path)!;
+                }
+                self.logFileHandle?.seekToEndOfFile();
+            }
+        }
+    }
 
+    func appendLogFile(content: String) {
+        dispatch_async(logFileOpQueue) {
+            if let data = content.dataUsingEncoding(NSUTF8StringEncoding) {
+                self.logFileHandle?.writeData(data)
+            }
+        }
+    }
+
+    func syncLogFile() {
+        dispatch_async(logFileOpQueue) {
+            self.logFileHandle?.synchronizeFile();
+        }
+    }
+
+    func readLogFile(completion: ((result: String?) -> Void)){
+        dispatch_async(logFileOpQueue) {
+            if let handle = self.logFileHandle {
+                handle.seekToFileOffset(0)
+                completion(result: String(data: handle.readDataToEndOfFile(), encoding: NSUTF8StringEncoding))
+            } else {
+                completion(result: nil)
+            }
+        }
+    }
+
+    func closeLogFile() {
+        dispatch_async(logFileOpQueue) {
+            self.logFileHandle?.closeFile();
+        }
+    }
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
     // Override point for customization after application launch.
         application.registerUserNotificationSettings(UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil))
+        let dateFormator = NSDateFormatter()
+        dateFormator.dateFormat = "yyyy-MM-dd"
+        createLogFile(dateFormator.stringFromDate(NSDate()))
+        appendLogFile("\(NSDate().description): Program Starts\n");
         return true
     }
 
@@ -37,6 +87,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         localNotification.soundName = UILocalNotificationDefaultSoundName
         localNotification.category = "invite"
         UIApplication.sharedApplication().scheduleLocalNotification(localNotification)
+        syncLogFile()
     }
 
 
@@ -49,6 +100,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillEnterForeground(application: UIApplication) {
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
+        syncLogFile()
     }
 
 
@@ -59,6 +111,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillTerminate(application: UIApplication) {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        syncLogFile()
+        closeLogFile()
     }
 
 

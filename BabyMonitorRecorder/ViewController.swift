@@ -73,27 +73,18 @@ class FavoritesViewController: UITableViewController {
 class HistoryViewController: UIViewController {
 
     @IBOutlet weak var textView: UITextView!
-
-    func readDataFile() -> String {
-        if let dir : NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first {
-            let path = dir.stringByAppendingPathComponent(dataFileName);
-
-            var filehandle:NSFileHandle;
-            if let testfilehendle = NSFileHandle(forUpdatingAtPath: path) {
-                filehandle = testfilehendle;
-            } else {
-                NSFileManager.defaultManager().createFileAtPath(path, contents: nil, attributes: nil);
-                filehandle = NSFileHandle(forUpdatingAtPath: path)!;
-            }
-
-            return String(data: filehandle.readDataToEndOfFile(), encoding: NSUTF8StringEncoding)!;
-        }
-        return "";
-    }
+    let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
 
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated);
-        textView.text = readDataFile();
+        textView.text = "loading..."
+        
+        appDelegate.readLogFile() {
+            (result: String?) in let text = result!
+            dispatch_async(dispatch_get_main_queue()) {
+                self.textView.text = text
+            }
+        }
     }
 }
 
@@ -104,15 +95,8 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
 
     var centralManager:CBCentralManager?;
     var peripherals: [(CBPeripheral, String, NSNumber)]?;
-    var filehandle:NSFileHandle?;
     var lastBroadcastData: NSData?;
-
-    func appendToDataFile(string: String) {
-        if let data = string.dataUsingEncoding(NSUTF8StringEncoding) {
-            filehandle!.writeData(data)
-        }
-        filehandle!.synchronizeFile();
-    }
+    let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
 
     override func viewDidLoad() {
         super.viewDidLoad();
@@ -125,20 +109,6 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
         } else {
             saveUserDefaults();
         }
-
-        if let dir : NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first {
-            let path = dir.stringByAppendingPathComponent(dataFileName);
-
-            if let testfilehendle = NSFileHandle(forUpdatingAtPath: path) {
-                filehandle = testfilehendle;
-            } else {
-                NSFileManager.defaultManager().createFileAtPath(path, contents: nil, attributes: nil);
-                filehandle = NSFileHandle(forUpdatingAtPath: path)!;
-            }
-            filehandle!.seekToEndOfFile();
-        }
-
-        appendToDataFile("\(NSDate().description): Program Starts\n");
     }
 
     override func didReceiveMemoryWarning() {
