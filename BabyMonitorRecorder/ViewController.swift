@@ -149,11 +149,12 @@ class ViewController: UITableViewController, CBCentralManagerDelegate {
 
     func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
         if(getDeviceStatus(peripheral)) {
-            let currentBroadcastData = advertisementData["kCBAdvDataManufacturerData"]!;
-            if (!currentBroadcastData.isEqual(lastBroadcastData)) {
-                print("device found: \(peripheral.identifier.UUIDString), \(currentBroadcastData)");
-                appendToDataFile("\(NSDate().description): Device Found: \(peripheral.identifier.UUIDString), Data: \(currentBroadcastData), RSSI: \(RSSI) dB\n");
-                lastBroadcastData = currentBroadcastData as? NSData;
+            if let currentBroadcastData = advertisementData["kCBAdvDataManufacturerData"] {
+                if (!currentBroadcastData.isEqual(lastBroadcastData)) {
+                    print("device found: \(peripheral.identifier.UUIDString), \(currentBroadcastData)");
+                    appDelegate.appendLogFile("\(NSDate().description): Device Found: \(peripheral.identifier.UUIDString), Data: \(currentBroadcastData), RSSI: \(RSSI) dB\n");
+                    lastBroadcastData = currentBroadcastData as? NSData;
+                }
             }
         }
         let newPeripheralElem = (peripheral, "\(advertisementData)", RSSI);
