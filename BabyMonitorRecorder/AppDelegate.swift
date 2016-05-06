@@ -69,7 +69,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Override point for customization after application launch.
         application.registerUserNotificationSettings(UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil))
         let dateFormator = NSDateFormatter()
-        dateFormator.dateFormat = "yyyy-MM-dd"
+        dateFormator.dateFormat = "yyyy-MM-dd-HH-mm"
         createLogFile(dateFormator.stringFromDate(NSDate()))
         appendLogFile("\(NSDate().description): Program Starts\n");
         return true
