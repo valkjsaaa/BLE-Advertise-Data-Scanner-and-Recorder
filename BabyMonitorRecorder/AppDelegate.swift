@@ -9,13 +9,14 @@
 
 import UIKit
 
-
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     let logFileOpQueue = dispatch_queue_create("me.jackieyang.babymonitor.fileop", nil);
     var logFileHandle:NSFileHandle?;
+    var monitoredUuids: [String] = [];
+    var bluetoothManager: BluetoothManager!;
 
     func createLogFile(date: String) {
         dispatch_async(logFileOpQueue) {
@@ -65,13 +66,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
 
+    func saveUserDefaults(){
+        func uniq<S: SequenceType, E: Hashable where E==S.Generator.Element>(source: S) -> [E] {
+            var seen: [E:Bool] = [:]
+            return source.filter({ seen.updateValue(true, forKey: $0) == nil })
+        }
+
+        monitoredUuids = uniq(monitoredUuids);
+
+        userDefaults.setObject(monitoredUuids, forKey: monitoredUuidsPrefKey);
+        userDefaults.synchronize();
+    }
+
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
     // Override point for customization after application launch.
+        bluetoothManager = BluetoothManager(delegate: self)
         application.registerUserNotificationSettings(UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil))
         let dateFormator = NSDateFormatter()
         dateFormator.dateFormat = "yyyy-MM-dd-HH-mm"
         createLogFile(dateFormator.stringFromDate(NSDate()))
         appendLogFile("\(NSDate().description): Program Starts\n");
+        if let uuidArray = userDefaults.arrayForKey(monitoredUuidsPrefKey) as? [String] {
+            monitoredUuids = uuidArray;
+        } else {
+            saveUserDefaults();
+        }
         return true
     }
 
