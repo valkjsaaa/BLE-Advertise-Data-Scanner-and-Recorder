@@ -16,7 +16,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     var lastBroadcastData: NSData?;
     var viewController = UIApplication.sharedApplication().keyWindow?.rootViewController
     var appDelegate : AppDelegate;
-    var callbacks: [(CBCentralManager, CBPeripheral, [String : AnyObject], NSNumber) -> Void] = [];
+    var callbacks = CallbackList<(CBCentralManager, CBPeripheral, [String : AnyObject], NSNumber) -> Void>();
+    var seen = 0;
 
     init(delegate: AppDelegate) {
         peripherals = [];
@@ -58,6 +59,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
     func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
         if(getDeviceStatus(peripheral)) {
+            seen += 1;
             if let currentBroadcastData = advertisementData["kCBAdvDataManufacturerData"] {
                 if (!currentBroadcastData.isEqual(lastBroadcastData)) {
                     print("device found: \(peripheral.identifier.UUIDString), \(currentBroadcastData)");
@@ -66,8 +68,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
                 }
             }
         }
-        for callback in callbacks {
-            callback(central, peripheral, advertisementData, RSSI);
+        for callback in callbacks.list{
+            callback.0(central, peripheral, advertisementData, RSSI);
         }
     }
     func getDeviceStatus(device:CBPeripheral) -> Bool {

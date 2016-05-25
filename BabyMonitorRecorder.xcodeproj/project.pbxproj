@@ -14,6 +14,7 @@
 		83CC2D3857AE0DA98DB71D0E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 83CC2BF737F1BD9097FFB9EB /* Main.storyboard */; };
 		83CC2DCDED67A1ABB172B054 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 83CC2CF94BC979325BD07061 /* LaunchScreen.storyboard */; };
 		83CC2E50C1A758D069954357 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83CC22B44168177A1F685B4D /* Assets.xcassets */; };
+		8CC7A0821CF60B8F0023C3DA /* CallbackList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC7A0811CF60B8F0023C3DA /* CallbackList.swift */; };
 		8CD2D76E1CF5CAE10065145A /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CD2D76D1CF5CAE10065145A /* BluetoothManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -48,6 +49,7 @@
 		83CC2B831A34CDFE002D4E88 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		83CC2BBF562591F0C44BC7A6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		83CC2DFFA5714D9BC0E8C612 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.info; path = Info.plist; sourceTree = "<group>"; };
+		8CC7A0811CF60B8F0023C3DA /* CallbackList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallbackList.swift; sourceTree = "<group>"; };
 		8CD2D76D1CF5CAE10065145A /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -124,6 +126,7 @@
 				83CC2BF737F1BD9097FFB9EB /* Main.storyboard */,
 				83CC2A52C4ED37E3CB6FADD0 /* ViewController.swift */,
 				8CD2D76D1CF5CAE10065145A /* BluetoothManager.swift */,
+				8CC7A0811CF60B8F0023C3DA /* CallbackList.swift */,
 			);
 			path = BabyMonitorRecorder;
 			sourceTree = "<group>";
@@ -252,6 +255,7 @@
 			files = (
 				83CC2AC84A25E809D0C373D9 /* AppDelegate.swift in Sources */,
 				8CD2D76E1CF5CAE10065145A /* BluetoothManager.swift in Sources */,
+				8CC7A0821CF60B8F0023C3DA /* CallbackList.swift in Sources */,
 				83CC20BD543C19440873C7A7 /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

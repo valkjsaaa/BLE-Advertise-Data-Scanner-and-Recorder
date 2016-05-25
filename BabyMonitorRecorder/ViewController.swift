@@ -87,6 +87,7 @@ class ViewController: UITableViewController {
     var peripherals = [(CBPeripheral, String, NSNumber)]();
     var lastBroadcastData: NSData?;
     let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    var index: Int?;
 
     override func viewDidLoad() {
         super.viewDidLoad();
@@ -95,11 +96,13 @@ class ViewController: UITableViewController {
     }
 
     override func viewWillAppear(animated: Bool) {
-        self.appDelegate.bluetoothManager.callbacks += [updateDevices];
+        self.appDelegate.bluetoothManager.callbacks.addCallback(updateDevices);
     }
 
     override func viewWillDisappear(animated: Bool) {
-        self.appDelegate.bluetoothManager.callbacks.removeAll();
+        if let index = index {
+            self.appDelegate.bluetoothManager.callbacks.removeCallback(index)
+        }
     }
 
     func updateDevices(manager: CBCentralManager, peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber){
