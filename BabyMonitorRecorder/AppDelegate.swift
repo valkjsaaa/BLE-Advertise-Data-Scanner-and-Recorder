@@ -9,6 +9,13 @@
 
 import UIKit
 
+enum ConnectState {
+    case Connecting
+    case ToBeConfigure
+    case Connected
+    case Disconnected
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
@@ -17,6 +24,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var logFileHandle:NSFileHandle?;
     var monitoredUuids: [String] = [];
     var bluetoothManager: BluetoothManager!;
+    var state = ConnectState.Connecting
+    let stateCallbacks = CallbackList<(ConnectState) -> Void>();
+    var checkStateTimer: NSTimer!;
+    var disconnectCount = 0;
+    let disconnectCountThreshold = 100;
+
+    func updateConnectionStatus() {
+        if bluetoothManager.seen != 0 {
+            state = ConnectState.Connected;
+        } else {
+            if monitoredUuids.count == 0 {
+                state = ConnectState.ToBeConfigure;
+            } else {
+                state = ConnectState.Disconnected;
+            }
+        }
+        bluetoothManager.seen = 0
+        print("fired: \(state)")
+        for callback in stateCallbacks.list {
+            callback.0(state)
+        }
+        if state == .Disconnected {
+            disconnectCount += 1;
+        } else {
+            disconnectCount = 0;
+        }
+
+        if disconnectCount >= disconnectCountThreshold {
+             
+        }
+    }
 
     func createLogFile(date: String) {
         dispatch_async(logFileOpQueue) {
@@ -67,6 +105,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func saveUserDefaults(){
+        objc_sync_enter(self)
         func uniq<S: SequenceType, E: Hashable where E==S.Generator.Element>(source: S) -> [E] {
             var seen: [E:Bool] = [:]
             return source.filter({ seen.updateValue(true, forKey: $0) == nil })
@@ -76,6 +115,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         userDefaults.setObject(monitoredUuids, forKey: monitoredUuidsPrefKey);
         userDefaults.synchronize();
+
+        checkStateTimer.invalidate()
+        state = .Connecting
+        for callback in stateCallbacks.list {
+            callback.0(state)
+        }
+        bluetoothManager.seen = 0
+        checkStateTimer = NSTimer.scheduledTimerWithTimeInterval(10.0, target: self, selector: #selector(AppDelegate.updateConnectionStatus), userInfo: nil, repeats: true)
+        objc_sync_exit(self)
     }
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
@@ -91,6 +139,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } else {
             saveUserDefaults();
         }
+        if monitoredUuids.count == 0 {
+            state = ConnectState.ToBeConfigure;
+        }
+        checkStateTimer = NSTimer.scheduledTimerWithTimeInterval(10.0, target: self, selector: #selector(AppDelegate.updateConnectionStatus), userInfo: nil, repeats: true)
         return true
     }
 
@@ -133,8 +185,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         syncLogFile()
         closeLogFile()
     }
-
-
-
 
 }

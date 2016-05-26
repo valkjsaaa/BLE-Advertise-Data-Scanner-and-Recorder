@@ -1,0 +1,15 @@
+/* 
+  Localizable.strings
+  BabyMonitorRecorder
+
+  Created by Jackie Yang on 5/27/16.
+  Copyright © 2016 Jackie Yang. All rights reserved.
+*/
+
+"connectionState.connected.text" = "The socks is connected and logging data!";
+
+"connectionState.disconnected.text" = "Try reconnect the socks?";
+
+"connectionState.connecting.text" = "Connecting to socks, wait for a sec.";
+
+"connectionState.tobeconfigure.text" = "Please configure the app in advanced settings.";

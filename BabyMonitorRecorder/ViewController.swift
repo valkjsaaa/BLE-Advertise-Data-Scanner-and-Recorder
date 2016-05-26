@@ -49,6 +49,12 @@ class FavoritesViewController: UITableViewController {
         uuidTableView.reloadData();
     }
 
+    @IBAction func clearAll(sender: UIButton) {
+        appDelegate.monitoredUuids.removeAll();
+        appDelegate.saveUserDefaults();
+        uuidTableView.reloadData();
+    }
+
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return appDelegate.monitoredUuids.count;
     }
@@ -184,4 +190,47 @@ class ViewController: UITableViewController {
         print(userDefaults)
     }
 
+}
+
+class DefaultViewcontroller: UIViewController {
+
+    @IBOutlet weak var stateLabel: UILabel!
+    @IBOutlet weak var stateIcon: UIImageView!
+    @IBOutlet weak var stateText: UILabel!
+
+    var index: Int?;
+    let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    let iconMap: [ConnectState: UIImage?] = [.Connecting: UIImage.init(named: "Disconnected")!,
+                                            .ToBeConfigure: UIImage.init(named: "Disconnected")!,
+                                            .Disconnected: UIImage.init(named: "Disconnected")!,
+                                            .Connected: UIImage.init(named: "Connected")!]
+
+    let labelMap: [ConnectState: String?] = [.Connecting: "Connecting...",
+                                             .ToBeConfigure: "Not Configured",
+                                             .Disconnected: "Disconnected :(",
+                                             .Connected: "Connected :)"]
+
+    let textMap: [ConnectState: String?] = [.Connecting: NSLocalizedString("connectionState.connecting.text", comment: ""),
+                                            .ToBeConfigure: NSLocalizedString("connectionState.tobeconfigure.text", comment: ""),
+                                            .Disconnected: NSLocalizedString("connectionState.disconnected.text", comment: ""),
+                                            .Connected: NSLocalizedString("connectionState.connected.text", comment: "")]
+
+
+    override func viewWillAppear(animated: Bool) {
+        updateInterface(self.appDelegate.state)
+        self.appDelegate.stateCallbacks.addCallback(updateInterface);
+    }
+
+    override func viewWillDisappear(animated: Bool) {
+        if let index = index {
+            self.appDelegate.stateCallbacks.removeCallback(index)
+        }
+    }
+
+    func updateInterface(state: ConnectState) {
+        stateIcon.image = iconMap[state]!
+        stateLabel.text = labelMap[state]!
+        stateText.text = textMap[state]!
+    }
+    
 }
